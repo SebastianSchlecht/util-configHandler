@@ -7,3 +7,6 @@ Import the created .jar into your own project
 
 Use _me.sebastianschlecht.configHandler.ConfigHandler_ in your project.  
 A new config file will be created for every unique _getConfigFileHandler()_ call
+
+# Note
+Use [jutpack](https://jitpack.io/) to use any git repository as a maven or gradle dependency.
