@@ -1,7 +1,7 @@
 # util-configHandler
 A simple config handler to save and restore strings
 # How to build
-Run __gradle build__  
+Run __gradle build__  or use the locale gradle wrapper __gradlew build__
 # How to use
 Import the created .jar into your own project
 
