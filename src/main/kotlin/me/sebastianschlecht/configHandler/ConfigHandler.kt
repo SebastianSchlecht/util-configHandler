@@ -4,7 +4,7 @@ import java.io.File
 import java.io.Serializable
 
 class ConfigHandler(private val configDirectory: File): AutoCloseable {
-    private var fileHandlers: MutableMap<String, IConfigFileHandler> = HashMap()
+    private var fileHandlers: MutableMap<String, ConfigFileHandler> = HashMap()
 
     init {
         if (!configDirectory.exists()) {
@@ -25,9 +25,16 @@ class ConfigHandler(private val configDirectory: File): AutoCloseable {
         })
     }
 
+    fun writeToDisk() {
+        fileHandlers.forEach() {
+            it.value.writeToDisk()
+        }
+    }
+
     override fun close() {
         fileHandlers.forEach {
             it.value.close()
         }
+        fileHandlers.clear()
     }
 }

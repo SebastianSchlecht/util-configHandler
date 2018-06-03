@@ -14,11 +14,11 @@ internal class ObjectOutputStream(private val writer: BufferedWriter): AutoClose
     private fun writeGroup(name: String, values: MutableMap<String, String>) {
         val newName = name.replace(":", "\\:")
 
-        writer.write("[$newName]")
+        writer.write("[$newName]\n")
 
         //ToDo Mask [ and : from name
         values.forEach {
-            writer.write("\n${it.key}:${it.value}")
+            writer.write("${it.key}:${it.value}\n")
         }
     }
 

@@ -11,10 +11,25 @@ internal class ConfigFileHandler(private val file: File): IConfigFileHandler {
     private var isModified = false
 
 
+    //ToDo isModified, falls neue Registration, heißt key ist in Datei nicht vorhanden
     override fun <T: Serializable> register(groupId: String, key: String, defaultData: T) {
         assert(!isInitialized)
-        var group = dataModel!!.getOrPut(groupId, { HashMap() })
-        group[key] = defaultData.toString()
+        insert(groupId, key, defaultData)
+    }
+
+    override fun <T : Serializable> update(groupId: String, key: String, data: T) {
+        isModified = true
+
+        if (dataModel[groupId]?.containsKey(key) == false) {
+            throw IllegalArgumentException("[$groupId]:$key doesn't exists")
+        }
+
+        insert(groupId, key, data)
+    }
+
+    private fun <T : Serializable> insert(groupId: String, key: String, data: T) {
+        var group = dataModel.getOrPut(groupId, { HashMap() })
+        group[key] = data.toString()
     }
 
     override fun readConfig(groupId: String, key: String): String {
@@ -26,36 +41,13 @@ internal class ConfigFileHandler(private val file: File): IConfigFileHandler {
         val data = dataModel[groupId]?.get(key)
 
         if (data == null) {
-            throw IllegalArgumentException()
+            throw IllegalArgumentException("Couldn't load [$groupId]:$key")
         } else {
-
             return data
         }
     }
 
-    private fun reloadDataModel() {
-        if (!file.exists()) return
-
-        FileInputStream(file).use {
-            it.bufferedReader().use {
-                updateModel(ObjectInputStream(it).readObject())
-            }
-        }
-    }
-
-    private fun updateModel(newModel: MutableMap<String, MutableMap<String, String>>) {
-        newModel.forEach {
-            var group = dataModel.getOrPut(it.key, { HashMap()})
-
-            it.value.forEach {
-                group[it.key] = it.value
-            }
-        }
-    }
-
-    override fun close() {
-        if (dataModel.isEmpty()) return
-
+    override fun writeToDisk() {
         FileOutputStream(file, false).use {
             it.bufferedWriter().use {
                 ObjectOutputStream(it).use {
@@ -63,6 +55,51 @@ internal class ConfigFileHandler(private val file: File): IConfigFileHandler {
                 }
             }
         }
+
+        isModified = false
+    }
+
+    private fun reloadDataModel() {
+        if (!file.exists()) return
+
+        var updatedModelCount = 0
+        val defaultModelCount = dataModel.map {
+            it.value.keys.size
+        }.sum()
+
+        FileInputStream(file).use {
+            it.bufferedReader().use {
+                updatedModelCount = updateModel(ObjectInputStream(it).readObject())
+            }
+        }
+
+        if (updatedModelCount < defaultModelCount) {
+            isModified = true
+        }
+    }
+
+    private fun updateModel(newModel: MutableMap<String, MutableMap<String, String>>): Int {
+        var updatedValues = 0
+
+        newModel.forEach {
+            var group = dataModel.getOrPut(it.key, { HashMap()})
+            //var group = dataModel[it.key]
+
+            it.value.forEach {
+                if (group.containsKey(it.key)) updatedValues++
+
+                group[it.key] = it.value
+            }
+        }
+
+        return updatedValues
+    }
+
+    override fun close() {
+        if (dataModel.isEmpty()) return
+
+        if (isModified) writeToDisk()
+
         dataModel.clear()
     }
 }
